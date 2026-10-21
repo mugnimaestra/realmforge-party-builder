@@ -391,6 +391,64 @@ async def generate_item_image(
     }
 
 
+async def generate_item_video(
+    item_name: str,
+    description: str,
+    tool_context: ToolContext = None,
+) -> dict:
+    """Generate a short video animation for a hero, monster, spell, magical artifact, or weapon in the global region using gemini-omni-flash-preview.
+
+    Args:
+        item_name: The name of the RPG hero, monster, weapon, magical item, or spell.
+        description: A visual description of the subject and its animation/action.
+        tool_context: ADK tool context for saving artifacts.
+
+    Returns:
+        A dictionary containing the item_name, artifact_filename, and the public HTTPS URL.
+    """
+    client = get_genai_client()
+    prompt = f"Fantasy RPG cinematic animation of {item_name}: {description}, highly detailed"
+
+    interaction = client.interactions.create(
+        model="gemini-omni-flash-preview",
+        input=[{"type": "text", "text": prompt}],
+        response_format=[{"type": "video", "resolution": "720p", "duration": "3s"}],
+    )
+
+    video_data = getattr(interaction.output_video, "data", None) if interaction.output_video else None
+    if not video_data:
+        return {"error": f"Failed to generate video for '{item_name}'."}
+
+    video_bytes = base64.b64decode(video_data)
+    mime_type = getattr(interaction.output_video, "mime_type", "video/mp4") or "video/mp4"
+
+    safe_name = re.sub(r"[^a-zA-Z0-9_\-]", "_", item_name.strip().lower())
+    artifact_filename = f"{safe_name}.mp4"
+
+    # (1) Save artifact so it shows up in Playground's Artifacts panel
+    if tool_context:
+        try:
+            artifact_part = types.Part.from_bytes(data=video_bytes, mime_type=mime_type)
+            await tool_context.save_artifact(filename=artifact_filename, artifact=artifact_part)
+        except Exception:
+            pass
+
+    # (2) Upload video bytes directly to GCS bucket without writing to local file
+    storage_client = get_storage_client()
+    bucket = storage_client.bucket(BUCKET_NAME)
+    object_name = f"videos/{safe_name}_{uuid.uuid4().hex[:8]}.mp4"
+    blob = bucket.blob(object_name)
+    blob.upload_from_string(video_bytes, content_type=mime_type)
+
+    public_url = f"https://storage.googleapis.com/{BUCKET_NAME}/{object_name}"
+
+    return {
+        "item_name": item_name,
+        "artifact_filename": artifact_filename,
+        "public_url": public_url,
+    }
+
+
 async def generate_memories_callback(callback_context: CallbackContext):
     """WRITE: after each turn, send the session events to Memory Bank for durable fact extraction."""
     await callback_context.add_session_to_memory()
@@ -412,9 +470,10 @@ instruction = schema_manager.generate_system_prompt(
         "Use the roll_dice tool whenever rolling dice for attacks, checks, or damage. "
         "Use the lookup_monster tool to fetch real stats and abilities for any monster or boss from the public bestiary database. "
         "Use the generate_item_image tool whenever the player wants an illustration or portrait for a hero, monster, spell, or item. "
+        "Use the generate_item_video tool whenever the player wants a short video animation of a hero, monster, spell, or item. "
         "You have access to a secure Python sandbox via code execution to perform complex combat math, probability analyses, simulation runs, or stat calculations."
     ),
-    workflow_description="Analyze the request, call the appropriate tools (Firestore, dice roller, monster bestiary, image generator, Python sandbox, or memory), and return structured UI when appropriate.",
+    workflow_description="Analyze the request, call the appropriate tools (Firestore, dice roller, monster bestiary, image/video generator, Python sandbox, or memory), and return structured UI when appropriate.",
     ui_description=(
         "Keep every surface tiny and flat: ONE Card > ONE Column > a few Text rows. "
         "Never nest a Card inside a Card. "
@@ -454,6 +513,7 @@ root_agent = Agent(
         roll_dice,
         lookup_monster,
         generate_item_image,
+        generate_item_video,
     ],
     code_executor=AgentEngineSandboxCodeExecutor(
         sandbox_resource_name=SANDBOX_RESOURCE_NAME,
