@@ -2,6 +2,8 @@
 
 **RealmForge** is an interactive, conversational RPG companion built on Google's Agent Development Kit (ADK) and Gemini. It enables players to recruit and manage a party of adventurers in Google Cloud Firestore, roll polyhedral dice, query monsters from the D&D 5e Bestiary, run complex combat simulations in a secure Vertex AI Agent Engine code sandbox, generate custom fantasy portraits via Gemini (`gemini-3.1-flash-lite-image`), generate cinematic animations via Google Omni (`gemini-omni-flash-preview`), and render rich turn-based UI cards with **A2UI**.
 
+![RealmForge Demo Walkthrough](docs/demo.gif)
+
 ---
 
 ## ⚔️ Implemented Features & Architecture
