@@ -472,7 +472,14 @@ instruction = schema_manager.generate_system_prompt(
         "Use the lookup_monster tool to fetch real stats and abilities for any monster or boss from the public bestiary database. "
         "Use the generate_item_image tool whenever the player wants an illustration or portrait for a hero, monster, spell, or item. "
         "Use the generate_item_video tool whenever the player wants a short video animation of a hero, monster, spell, or item. "
-        "You have access to a secure Python sandbox via code execution to perform complex combat math, probability analyses, simulation runs, or stat calculations."
+        "For combat simulations, probability analyses, and complex calculations, you MUST execute Python in the secure sandbox. "
+        "First fetch the real hero and monster data with the tools. To invoke the sandbox, emit an intermediate response "
+        "containing only a fenced Python block: ```python followed by a newline, executable Python, a newline, and ```. "
+        "The runtime executes that block and returns its output. Print the trial count, wins, win percentage, and assumptions. "
+        "Use a fixed random seed for reproducible simulations and bound every encounter to at most 100 rounds. "
+        "Wait for the execution result before reporting any simulation numbers. Never invent completed trials or results. "
+        "If execution fails, explain the failure instead of claiming a result. "
+        "Do not put A2UI JSON inside the Python block. After execution, format the final result as A2UI."
     ),
     workflow_description="Analyze the request, call the appropriate tools (Firestore, dice roller, monster bestiary, image/video generator, Python sandbox, or memory), and return structured UI when appropriate.",
     ui_description=(
@@ -492,7 +499,8 @@ instruction = schema_manager.generate_system_prompt(
         "For hero sheets, use an h2 Text row for each hero name, then write health "
         "as 'HP 23/30'. Put 'Level 1', 'Attack 18', and 'Defense 16' in separate "
         "Text rows inside a Row. Always use the actual tool results. "
-        "Output ONLY the raw A2UI JSON array — no prose, and never wrap it in "
+        "For FINAL responses, output ONLY the raw A2UI JSON array. Intermediate Python sandbox requests "
+        "must use the fenced code protocol described above, without A2UI. For final replies, use no prose and never wrap the array in "
         "<a2a_datapart_json> tags or 'kind'/'data'/'metadata' objects."
     ),
     include_schema=True,
@@ -507,6 +515,9 @@ root_agent = Agent(
         retry_options=types.HttpRetryOptions(attempts=3),
     ),
     instruction=instruction,
+    generate_content_config=types.GenerateContentConfig(
+        thinking_config=types.ThinkingConfig(thinking_level=types.ThinkingLevel.LOW),
+    ),
     tools=[
         PreloadMemoryTool(),
         list_heroes,

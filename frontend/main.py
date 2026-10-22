@@ -41,6 +41,7 @@ from a2a.types import (
     Role,
     TaskArtifactUpdateEvent,
     TaskState,
+    TaskStatusUpdateEvent,
     TextPart,
     TransportProtocol,
 )
@@ -157,7 +158,7 @@ async def chat(req: Request):
     user_id = body.get("user_id") or "web-user"
     parts: list[dict] = []
 
-    async with httpx.AsyncClient(headers=_auth_headers(), timeout=120) as client:
+    async with httpx.AsyncClient(headers=_auth_headers(), timeout=360) as client:
         card = await _get_card(client)
         factory = ClientFactory(
             ClientConfig(
@@ -195,6 +196,9 @@ async def chat(req: Request):
             if isinstance(update, TaskArtifactUpdateEvent):
                 got_artifact_update = True
                 parts.extend(_extract_parts(update.artifact.parts))
+            elif isinstance(update, TaskStatusUpdateEvent) and update.status.message:
+                # ADK sends function responses in working-status messages.
+                parts.extend(part for part in _extract_parts(update.status.message.parts) if part["kind"] == "tool")
 
         # Non-streaming fallback: pull parts from the final task's artifacts.
         if not got_artifact_update and last_task is not None:
@@ -204,7 +208,8 @@ async def chat(req: Request):
         if last_task is not None:
             status_message = getattr(getattr(last_task, "status", None), "message", None)
             failed = last_task.status.state in (TaskState.failed, TaskState.canceled, TaskState.rejected)
-            if status_message and (failed or not parts):
+            has_reply = any(part["kind"] in ("text", "a2ui") for part in parts)
+            if status_message and (failed or not has_reply):
                 parts.extend(_extract_parts(status_message.parts))
 
     if not any(part["kind"] in ("text", "a2ui") for part in parts):

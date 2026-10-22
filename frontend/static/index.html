@@ -402,7 +402,11 @@ form.addEventListener("submit", async (ev) => {
   const b = bubble("agent");
   b.appendChild(el("div", "thinking", "Consulting the field guide…"));
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 180000);
+  const timer = setTimeout(() => controller.abort(), 360000);
+  const notice = setTimeout(() => {
+    const thinking = b.querySelector(".thinking");
+    if (thinking) thinking.textContent = "The forge is still at work. Keep this page open…";
+  }, 30000);
   try {
     const res = await fetch("/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ message: text, user_id: userId }), signal: controller.signal });
     // Read as text first, then parse. If the proxy ever returns a non-JSON error
@@ -418,6 +422,7 @@ form.addEventListener("submit", async (ev) => {
     b.textContent = e.name === "AbortError" ? "This request took too long. Try a shorter request." : "Error: " + e.message;
   } finally {
     clearTimeout(timer);
+    clearTimeout(notice);
     setBusy(false);
   }
 });

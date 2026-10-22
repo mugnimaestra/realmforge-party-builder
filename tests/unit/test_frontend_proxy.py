@@ -16,6 +16,7 @@ from a2a.types import (
     Task,
     TaskState,
     TaskStatus,
+    TaskStatusUpdateEvent,
     TextPart,
 )
 from fastapi.testclient import TestClient
@@ -94,4 +95,30 @@ def test_tool_results_do_not_hide_a_failed_turn(proxy, monkeypatch):
     assert response.json()["parts"] == [
         {"kind": "tool", "name": "list_heroes", "data": {"result": []}},
         {"kind": "text", "text": "Sandbox unavailable"},
+    ]
+
+
+@pytest.mark.parametrize("reply_in_status", [False, True])
+def test_streamed_status_keeps_the_real_tool_result(proxy, monkeypatch, reply_in_status):
+    tool_message = Message(message_id="roll", role=Role.agent, parts=[Part(root=DataPart(
+        data={"name": "roll_dice", "response": {"rolls": [17], "total": 20}},
+        metadata={"adk_type": "function_response"},
+    ))])
+    task = Task(id="task", context_id="chapter", status=TaskStatus(state=TaskState.working))
+    update = TaskStatusUpdateEvent(task_id="task", context_id="chapter", status=TaskStatus(state=TaskState.working, message=tool_message), final=False)
+    reply = Message(message_id="reply", role=Role.agent, parts=[Part(root=TextPart(text="Initiative 20"))])
+    final_task = Task(id="task", context_id="chapter", status=TaskStatus(state=TaskState.completed, message=reply if reply_in_status else None), artifacts=[] if reply_in_status else [
+        Artifact(artifact_id="reply", parts=[Part(root=TextPart(text="Initiative 20"))]),
+    ])
+
+    async def send_message(message):
+        yield task, update
+        yield final_task, None
+
+    monkeypatch.setattr(proxy, "_get_card", AsyncMock())
+    monkeypatch.setattr(proxy, "ClientFactory", Mock(return_value=Mock(create=Mock(return_value=Mock(send_message=send_message)))))
+    response = TestClient(proxy.app).post("/chat", json={"message": "Roll initiative"})
+    assert response.json()["parts"] == [
+        {"kind": "tool", "name": "roll_dice", "data": {"rolls": [17], "total": 20}},
+        {"kind": "text", "text": "Initiative 20"},
     ]

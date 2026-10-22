@@ -25,9 +25,9 @@ Robustness notes (why this file is more than a one-liner):
 import json
 import re
 
-from google.genai import types
 from google.adk.agents.callback_context import CallbackContext
 from google.adk.models.llm_response import LlmResponse
+from google.genai import types
 
 # A2UI message kinds this renderer understands (v0.8).
 _A2UI_KEYS = ("beginRendering", "surfaceUpdate", "dataModelUpdate", "deleteSurface")
@@ -223,6 +223,14 @@ def a2ui_callback(
 ) -> LlmResponse | None:
     """Convert A2UI JSON in text output to rendered components (or a clean fallback)."""
     if not llm_response.content or not llm_response.content.parts:
+        return None
+
+    # Code execution runs after this callback. Keep the complete code request.
+    if any(
+        part.executable_code
+        or re.search(r"(?m)^```(?:python|tool_code)\s*\n", part.text or "")
+        for part in llm_response.content.parts
+    ):
         return None
 
     for part in llm_response.content.parts:
