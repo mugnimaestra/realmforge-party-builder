@@ -70,7 +70,7 @@
   .composer-note { text-align:center; color:var(--muted); font-size:.72rem; margin:.6rem 0 0; }
   .sr-only { position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap; }
 
-  /* --- A2UI component styles (Card, Column, Row, Text, Divider, List, Image, Icon) --- */
+  /* --- A2UI component styles (Card, Column, Row, Text, Divider, List, Image, Video, Icon) --- */
   .a2card { color:var(--ink); border:1px solid #cfb77b; border-radius:3px; padding:1.5rem; background:var(--paper); box-shadow:inset 0 0 0 5px #eee2c4,inset 0 0 0 6px #b29b693f,0 12px 40px #0003; max-width:100%; min-width:min(360px,100%); position:relative; }
   .a2card + .a2card, .a2col > .a2card { margin-top:.6rem; }
   .a2col { display:flex; flex-direction:column; gap:.4rem; }
@@ -178,7 +178,7 @@ function bubble(who) {
 
 /* ----------------------------------------------------------------------------
  * A2UI mini-renderer (v0.8 Basic Catalog subset).
- * Renders Card / Column / Row / Text / Divider / List / Image / Icon.
+ * Renders Card / Column / Row / Text / Divider / List / Image / Video / Icon.
  * Anything else falls back to plain text (see renderReply). All text goes in via
  * textContent and image URLs are validated, so agent output can't inject HTML.
  * -------------------------------------------------------------------------- */
@@ -294,7 +294,8 @@ function buildNode(id, comps, seen) {
     }
     case "Divider":
       return el("hr", "a2divider");
-    case "Image": {
+    case "Image":
+    case "Video": {
       const src = boundStr(props.url || props.src);
       return mediaFrame(src, boundStr(props.alt) || "Generated fantasy illustration");
     }
@@ -342,7 +343,7 @@ function renderReply(b, parts) {
   const texts = parts.filter(p => p && (p.kind === "text" || (!p.kind && p.text))).map(p => p.text || "");
   const a2ui = parts.filter(p => p && p.kind === "a2ui" && p.data).map(p => p.data);
 
-  const textStr = texts.join("\n").trim();
+  let textStr = texts.join("\n").trim();
   const tools = parts.filter(p => p && p.kind === "tool");
   if (tools.length) {
     const labels = { list_heroes:"Party loaded", get_hero:"Hero found", create_or_update_hero:"Hero saved", update_hero_hp:"Health updated", roll_dice:"Dice rolled", lookup_monster:"Bestiary consulted", generate_item_image:"Portrait requested", generate_item_video:"Video requested", code_execution:"Simulation run" };
@@ -350,12 +351,28 @@ function renderReply(b, parts) {
     for (const name of new Set(tools.map(p => p.name))) {
       const result = tools.find(p => p.name === name);
       const data = result.data?.result ?? result.data;
-      trail.appendChild(el("span", "tool-chip", data?.error ? "Tool returned an error" : labels[name] || "Tool completed"));
+      const failed = data?.error || (name === "code_execution" && data?.outcome !== "OUTCOME_OK");
+      trail.appendChild(el("span", "tool-chip", failed ? "Tool returned an error" : labels[name] || "Tool completed"));
     }
     b.appendChild(trail);
     for (const part of tools.filter(p => p.name === "roll_dice")) {
       const die = renderDice(part.data?.result ?? part.data ?? {});
       if (die) b.appendChild(die);
+    }
+  }
+  // A completed sandbox result remains useful if the model's final reply is empty.
+  // Display the verbatim tool output, without generating a replacement summary.
+  if (!a2ui.length) {
+    const execution = tools.find(p => p.name === "code_execution" && p.data?.outcome === "OUTCOME_OK" && p.data?.output);
+    if (execution) {
+      b.classList.add("rich");
+      const card = el("section", "a2card");
+      card.appendChild(el("h2", "a2text a2-h2", "Verified sandbox result"));
+      const output = el("p", "a2text", execution.data.output);
+      output.style.whiteSpace = "pre-wrap";
+      card.appendChild(output);
+      b.appendChild(card);
+      if (textStr.includes("finish_reason=STOP with empty parts")) textStr = "The simulation completed. No model summary was returned.";
     }
   }
   if (textStr) { const text = el("div"); appendText(text, textStr); b.appendChild(text); }

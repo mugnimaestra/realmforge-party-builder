@@ -1,0 +1,82 @@
+{
+  "sourceVersion": 1,
+  "date": "2026-10-22",
+  "source": "one verified frontend conversation",
+  "turns": [
+    {
+      "case": "party",
+      "prompt": "List my heroes in the party",
+      "tools": [
+        "list_heroes"
+      ]
+    },
+    {
+      "case": "dice",
+      "prompt": "Roll 1d20+3 for initiative",
+      "tools": [
+        "roll_dice"
+      ]
+    },
+    {
+      "case": "bestiary",
+      "prompt": "Look up a Goblin",
+      "tools": [
+        "lookup_monster"
+      ]
+    },
+    {
+      "case": "combat",
+      "prompt": "Simulate my party against an Owlbear using the Python sandbox. State the combat assumptions and report the win percentage.",
+      "tools": [
+        "lookup_monster",
+        "code_execution"
+      ]
+    },
+    {
+      "case": "portrait",
+      "prompt": "Forge a portrait of Valen Ironclad with his runic shield in a dark fantasy style",
+      "tools": [
+        "generate_item_image"
+      ]
+    }
+  ],
+  "dice": {
+    "dice": "1d20",
+    "rolls": [
+      12
+    ],
+    "subtotal": 12,
+    "modifier": 3,
+    "total": 15,
+    "is_crit_success": false,
+    "is_crit_fumble": false
+  },
+  "combat": {
+    "outcome": "OUTCOME_OK",
+    "output": "Code execution result:\nTrials: 1000\nWins: 1000\nWin Percentage: 100.0%\nAssumptions: 4-member party vs 1 Owlbear (HP 59, AC 13). Owlbear uses multiattack (Beak +7, 1d10+5; Claws +7, 2d8+5). Heroes scale attacks from stats. Random targeting. Max 100 rounds.\n\n"
+  },
+  "video": {
+    "tool": "generate_item_video",
+    "inlinePlayback": true,
+    "sha256": "8b9da87922ba02b3f3f23bdcae0fe37b3711927cf706cfb5ad433acbaf1658de"
+  },
+  "textures": {
+    "bestiary-card.png": "e96d348b94336c2335bc658b45db2839c437c4d185ae18814cfc2d0c9424e557",
+    "bestiary-full.png": "202acb69f42a04b088c1e76f2e0f20d98f54bd922eaa771b41105bbde40cd903",
+    "combat-card.png": "5b4c107c65f2bfdc61589b310a95b48e67b893a2f411a4063a7e800a35f0f544",
+    "combat-full.png": "c36f099bcb0a881ad9786b56d59142964c63b8373b8e3bcdcd8d6c2c9ced8b4d",
+    "dice-card.png": "e8e40769b6ab38615514c8c1654a847a1d4a05453e78fe0600652a646203068d",
+    "dice-full.png": "2e6b6d7ec19f63421bd7f16d03510d8cf708fd1093163d15b2f4a701451b8f35",
+    "dice-panel.png": "9ee00270b0730d10eae29253ef69ffd4911ea06812f9c4cb7ad1fb4a0a8eca36",
+    "die.png": "561b607ee19b862162c3f25e35eccff90b2bbe786b0559077ca1c63b7202f47a",
+    "hero-hires.png": "cf3169b0c44ce72bc169acb10d7180201da4d3e5a9a7bf6941b0a127cf08a21c",
+    "party-card.png": "0c1f936358b97c191df428b49ba2a81807d51478968a24e023537cd7931f6a07",
+    "party-full.png": "4dda0e7bffb5fe12164f7143a4407916fd47c02a7b4f572b4853617e2b33699e",
+    "portrait-card.png": "f991d612172a0fd0b897bb4768a83ef421c24a496ba2aaaa74759ad0fc55d7fb",
+    "portrait-frame.png": "6e266115a62ea64de2a291f748b814749c9f98d3cc26b6cb485fdbb959e238dd",
+    "portrait-full.png": "2f64579902b91d1b4206b0eecf41d0cccf8003b9d9ddfff0b5b4ab323905b73d",
+    "portrait.png": "59900edcb1c1568d31e47cdadaab6208e39b7a3e17cc753766f3bb9571a9412f",
+    "video-full.png": "4a685f6fd7a51ed209ee390a22ed0dfc267c5670b9ad2f540beb7d5352983bc1",
+    "welcome.png": "a3c08f607ca0308260c69c0af26b5ae95708b8d9a3145fe7ee9b1cf103be58b2"
+  }
+}

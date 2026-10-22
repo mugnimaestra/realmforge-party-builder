@@ -4,13 +4,23 @@
 
 ![RealmForge Demo Walkthrough](docs/demo.gif)
 
+[Watch the 50-second demo with music](docs/demo.mp4) · [Version without music](docs/demo-nobgm.mp4)
+
+The demo uses real tool output and generated media from a verified frontend
+conversation. Waiting time is edited. The encounter percentage comes from a
+simplified sandbox simulation; its assumptions are shown in the video.
+
+The frontend now uses a dark fantasy tabletop theme, quick prompts, hero health
+bars and stat pills, actual-roll animation, and framed inline images and video.
+It supports keyboard focus, reduced motion, and narrow mobile screens.
+
 ---
 
 ## ⚔️ Implemented Features & Architecture
 
 - **🧠 Cross-Session Long-Term Memory (Vertex AI Memory Bank)**:
   - Loads and stores party preferences and combat notes with `PreloadMemoryTool` and `generate_memories_callback`.
-  - Cross-session recall needs a stable user ID, as in `adk web`. Each new chat context in the custom A2A frontend has a different anonymous identity, so it does not provide cross-session recall. Hero records still persist in Firestore.
+  - Cross-session recall needs a stable user ID, as in `adk web`. Each new chat context in the custom A2A frontend has a different anonymous identity. Those contexts use conversation history and skip Memory Bank reads/writes, so unavailable cross-session memory cannot block a turn. Hero records still persist in Firestore.
 - **🛡️ Hero Party Management (Google Cloud Firestore)**:
   - Real-time persistent state stored in a dedicated Firestore `heroes` collection.
   - Tools: `list_heroes`, `get_hero`, `create_or_update_hero`, `update_hero_hp`, and `delete_hero`.
@@ -112,7 +122,18 @@ The server also provides the ADK playground at [localhost:8000](http://localhost
 uv run pytest tests/unit
 # With the local frontend running; uses Chrome and does not capture test data:
 uv run --with patchright python scripts/check_frontend.py
+# Real cloud tools, with both local servers running:
+uv run --with patchright python scripts/check_live_agent.py
 ```
+
+### Demo source and license
+
+The editable [demo project](demo/README.md) uses Remotion, with video-shotcraft
+camera recipes and the hyperframes-motion-reel reference's beat grid and kinetic
+type. Remotion is free for individuals and companies with three or fewer
+employees; this is a personal hackathon project. See the [Remotion license](https://www.remotion.dev/license).
+The project includes an original 120 BPM score and attributed cinematic sound
+effects. Source and asset licenses are recorded in [demo/ATTRIBUTION.md](demo/ATTRIBUTION.md).
 
 ---
 

@@ -44,7 +44,7 @@ def check_frontend() -> None:
         page.evaluate("""() => {
           const components = [
             {id:'root',component:{Card:{child:'column'}}},
-            {id:'column',component:{Column:{children:{explicitList:['name','hp','row','divider','list','image','icon','unsafe','caption']}}}},
+            {id:'column',component:{Column:{children:{explicitList:['name','hp','row','divider','list','image','video','unsafe-video','icon','unsafe','caption']}}}},
             {id:'name',component:{Text:{text:{literalString:'Renderer test'},usageHint:'h2'}}},
             {id:'hp',component:{Text:{text:{literalString:'HP 23/30'}}}},
             {id:'row',component:{Row:{children:{explicitList:['attack']}}}},
@@ -53,6 +53,8 @@ def check_frontend() -> None:
             {id:'list',component:{List:{children:{explicitList:['note']}}}},
             {id:'note',component:{Text:{text:{literalString:'<script>unsafe()</script>'}}}},
             {id:'image',component:{Image:{url:{literalString:'https://example.invalid/image.png'}}}},
+            {id:'video',component:{Video:{url:{literalString:'https://example.invalid/clip.mp4'}}}},
+            {id:'unsafe-video',component:{Video:{url:{literalString:'javascript:unsafe()'}}}},
             {id:'icon',component:{Icon:{name:{literalString:'shield'}}}},
             {id:'unsafe',component:{Image:{url:{literalString:'http://example.invalid/unsafe.png'}}}},
             {id:'caption',component:{Text:{text:{literalString:'Test caption'},usageHint:'caption'}}},
@@ -67,6 +69,7 @@ def check_frontend() -> None:
             assert page.locator(selector).count() > 0, selector
         assert page.locator("progress").get_attribute("value") == "23"
         assert page.locator(".a2img").count() == 1
+        assert page.locator(".a2video[controls]").count() == 1
         assert page.locator(".die").inner_text() == "17"
         assert "Natural 20" not in page.locator(".dice-panel").inner_text()
         assert "<script>unsafe()</script>" in page.locator(".a2card").inner_text()
@@ -90,6 +93,14 @@ def check_frontend() -> None:
         }""", isolated_context=False)
         assert page.locator("#media-test video[controls]").count() == 1
         assert "storage.googleapis.com" not in page.locator("#media-test").inner_text()
+        page.evaluate("""() => renderReply(bubble('agent'), [
+          {kind:'tool',name:'code_execution',data:{outcome:'OUTCOME_OK',output:'Trials: 10\\nWins: 7\\nWin Percentage: 70%'}},
+          {kind:'text',text:'The model returned no content (finish_reason=STOP with empty parts).'}
+        ])""", isolated_context=False)
+        fallback = page.locator(".msg.agent").last
+        assert fallback.locator(".a2card h2").inner_text() == "Verified sandbox result"
+        assert fallback.locator(".a2card p").inner_text() == "Trials: 10\nWins: 7\nWin Percentage: 70%"
+        assert "No model summary was returned" in fallback.inner_text()
         assert not errors, errors
         browser.close()
         logger.info("A2UI, media, dice, text safety, and reduced motion checks passed")

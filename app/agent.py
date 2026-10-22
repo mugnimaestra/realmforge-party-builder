@@ -35,6 +35,7 @@ from google.adk.code_executors.agent_engine_sandbox_code_executor import (
     AgentEngineSandboxCodeExecutor,
 )
 from google.adk.models import Gemini
+from google.adk.models.llm_request import LlmRequest
 from google.adk.tools import ToolContext
 from google.adk.tools.preload_memory_tool import PreloadMemoryTool
 from google.genai import types
@@ -450,8 +451,21 @@ async def generate_item_video(
     }
 
 
+class StableUserMemoryTool(PreloadMemoryTool):
+    """Anonymous A2A chapters already have session history, not a stable identity."""
+
+    async def process_llm_request(self, *, tool_context: ToolContext, llm_request: LlmRequest) -> None:
+        # ADK assigns this prefix to unauthenticated A2A callers. Do not turn
+        # their context ID into a cross-session identity or block on Memory Bank.
+        if tool_context.user_id.startswith("A2A_USER_"):
+            return
+        await super().process_llm_request(tool_context=tool_context, llm_request=llm_request)
+
+
 async def generate_memories_callback(callback_context: CallbackContext):
     """WRITE: after each turn, send the session events to Memory Bank for durable fact extraction."""
+    if callback_context.user_id.startswith("A2A_USER_"):
+        return None
     await callback_context.add_session_to_memory()
     return None
 
@@ -466,7 +480,7 @@ instruction = schema_manager.generate_system_prompt(
         "You are RealmForge, an interactive RPG party builder and encounter assistant. "
         "You manage heroes stored in Firestore, display their stats and abilities, and help the player "
         "form and manage their adventuring team for turn-based encounters. "
-        "You remember the player's preferences, favorite party comps, strategy notes, and past adventures across conversations. "
+        "You can recall preferences and strategy notes across conversations when the runtime provides a stable user identity. "
         "Use the Firestore tools to list, inspect, recruit, update, or heal heroes. "
         "Use the roll_dice tool whenever rolling dice for attacks, checks, or damage. "
         "Use the lookup_monster tool to fetch real stats and abilities for any monster or boss from the public bestiary database. "
@@ -494,6 +508,7 @@ instruction = schema_manager.generate_system_prompt(
         '{"Image": {"url": {"literalString": "https://..."}}}. Never point an '
         "Image at a bare filename, an artifact name, or a non-http(s) path. If you do "
         "not have a public URL, add a short Text line noting the image instead. "
+        "For generated video, put the exact public .mp4 URL in a Text row. The frontend turns it into a video player. "
         "No markdown in text; use the usageHint property ('h1', 'h2', 'body') for "
         "headings and emphasis. "
         "For hero sheets, use an h2 Text row for each hero name, then write health "
@@ -519,7 +534,7 @@ root_agent = Agent(
         thinking_config=types.ThinkingConfig(thinking_level=types.ThinkingLevel.LOW),
     ),
     tools=[
-        PreloadMemoryTool(),
+        StableUserMemoryTool(),
         list_heroes,
         get_hero,
         create_or_update_hero,

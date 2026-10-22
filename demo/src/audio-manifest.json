@@ -1,0 +1,49 @@
+{
+  "sourceVersion": 1,
+  "score": {
+    "author": "RealmForge demo production",
+    "bpm": 120,
+    "sampleRate": 48000,
+    "beat0": 0,
+    "seed": 711,
+    "license": "Original project asset"
+  },
+  "sfx": [
+    {
+      "name": "impact",
+      "title": "Cinematic whoosh deep impact",
+      "url": "https://assets.mixkit.co/active_storage/sfx/1143/1143-preview.mp3",
+      "license": "Mixkit Sound Effects Free License",
+      "sha256": "9854bff8a78fcebef95350ff0ec72a41ba449ab372bbd601b55d84de13bd626d",
+      "peakSeconds": 0.42933333333333334,
+      "duration": 4.063104166666666
+    },
+    {
+      "name": "sweep",
+      "title": "Fast whoosh transition",
+      "url": "https://assets.mixkit.co/active_storage/sfx/1490/1490-preview.mp3",
+      "license": "Mixkit Sound Effects Free License",
+      "sha256": "b88fd5d484251930efd6eca78c4340339908ea29d1e69bd24fb5191a10da4f78",
+      "peakSeconds": 0.7128333333333333,
+      "duration": 1.7567083333333333
+    },
+    {
+      "name": "paper",
+      "title": "Page turn single",
+      "url": "https://assets.mixkit.co/active_storage/sfx/1104/1104-preview.mp3",
+      "license": "Mixkit Sound Effects Free License",
+      "sha256": "3b2b05dd402127a6ee15f33c5c6690568f389848b1a8d11d6d70cab7d0268bd4",
+      "peakSeconds": 0.14445833333333333,
+      "duration": 0.4515625
+    },
+    {
+      "name": "shimmer",
+      "title": "Sweeping sparkle presentation intro",
+      "url": "https://assets.mixkit.co/active_storage/sfx/2633/2633-preview.mp3",
+      "license": "Mixkit Sound Effects Free License",
+      "sha256": "8228e373de20a738b3ca74cd08bac181434f72ea0a6f9d75f499e58e7a7fabe3",
+      "peakSeconds": 0.9786041666666667,
+      "duration": 2.9981458333333335
+    }
+  ]
+}
