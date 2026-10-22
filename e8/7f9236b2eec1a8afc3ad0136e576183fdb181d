@@ -1,0 +1,76 @@
+README.md
+  h_2d220f5439def3 7-16,23,125-126,129-137
+app/agent.py
+  h_2d220f5439def3 38,454-464,467-468,483,511,537
+demo/.gitignore
+  h_2d220f5439def3 1-5
+demo/ATTRIBUTION.md
+  h_2d220f5439def3 1-26
+demo/DESIGN.md
+  h_2d220f5439def3 1-121
+demo/QA.md
+  h_2d220f5439def3 1-67
+demo/README.md
+  h_2d220f5439def3 1-61
+demo/REVIEW.md
+  h_2d220f5439def3 1-47
+demo/capture.py
+  h_2d220f5439def3 1-152
+demo/package-lock.json
+  h_2d220f5439def3 1-3093
+demo/package.json
+  h_2d220f5439def3 1-24
+demo/props-nobgm.json
+  h_2d220f5439def3 1
+demo/public/textures/layout.json
+  h_2d220f5439def3 1-339
+demo/remotion.config.ts
+  h_2d220f5439def3 1-4
+demo/scripts/audio.mjs
+  h_2d220f5439def3 1-81
+demo/scripts/check_audio.py
+  h_2d220f5439def3 1-55
+demo/scripts/render.mjs
+  h_2d220f5439def3 1-22
+demo/scripts/stills.mjs
+  h_2d220f5439def3 1-15
+demo/src/Main.tsx
+  h_2d220f5439def3 1-17
+demo/src/Scenes.tsx
+  h_2d220f5439def3 1-169
+demo/src/audio-manifest.json
+  h_2d220f5439def3 1-49
+demo/src/audio.ts
+  h_2d220f5439def3 1-12
+demo/src/evidence.json
+  h_2d220f5439def3 1-82
+demo/src/index.ts
+  h_2d220f5439def3 1-6
+demo/src/timeline.ts
+  h_2d220f5439def3 1-30
+demo/src/visual.tsx
+  h_2d220f5439def3 1-47
+demo/src/workbench.ts
+  h_2d220f5439def3 1-17
+demo/styleframe.html
+  h_2d220f5439def3 1-9
+demo/tsconfig.json
+  h_2d220f5439def3 1-15
+frontend/static/index.html
+  h_2d220f5439def3 73,181,297-298,346,354-355,363-377
+scripts/check_frontend.py
+  h_2d220f5439def3 47,56-57,72,96-103
+tests/unit/test_memory_identity.py
+  h_2d220f5439def3 1-28
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "e87f9236b2eec1a8afc3ad0136e576183fdb181d",
+  "prompts": {},
+  "humans": {
+    "h_2d220f5439def3": {
+      "author": "Muhammad Mugni Hadi <mugni@rukita.co>"
+    }
+  }
+}
