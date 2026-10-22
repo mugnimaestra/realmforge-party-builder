@@ -3,60 +3,174 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Agent</title>
+<meta name="theme-color" content="#161914">
+<meta name="description" content="Build your adventuring party, roll dice, and test encounters with RealmForge.">
+<title>RealmForge · The GM’s Table</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet">
 <!-- Optional: used only to draw A2UI Icon components. If it can't load (offline/
      corp network), icons fall back to showing their name as text. -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined">
 <style>
-  :root { --accent:#1a73e8; --bg:#f6f8fa; --border:#dfe3e8; }
+  :root { color-scheme:dark; --bg:#161914; --surface:#20271f; --border:#4b4938; --gold:#d7b775; --text:#eee6d5; --muted:#bcb5a2; --paper:#eee2c4; --ink:#302b23; --serif:'Cormorant Garamond',Georgia,serif; --sans:'Source Sans 3',system-ui,sans-serif; --mono:'IBM Plex Mono',monospace; }
   * { box-sizing:border-box; }
-  body { margin:0; font-family:system-ui,sans-serif; background:var(--bg); display:flex; flex-direction:column; height:100vh; }
-  header { background:var(--accent); color:#fff; padding:.9rem 1.2rem; font-weight:700; }
-  #log { flex:1; overflow-y:auto; padding:1.2rem; max-width:780px; width:100%; margin:0 auto; }
-  .msg { margin:.6rem 0; }
+  body { margin:0; font-family:var(--sans); background:var(--bg); color:var(--text); display:flex; flex-direction:column; height:100vh; height:100dvh; }
+  body::before { content:''; position:fixed; inset:0; pointer-events:none; background:radial-gradient(ellipse at 60% 0%,#56634222,transparent 65%); }
+  button,input { font:inherit; }
+  button { cursor:pointer; }
+  button:focus-visible,input:focus-visible,a:focus-visible,video:focus-visible { outline:3px solid var(--gold); outline-offset:4px; }
+  button:disabled { cursor:wait; opacity:.65; }
+  .masthead { z-index:1; display:flex; align-items:center; justify-content:space-between; gap:1rem; padding:1.2rem 2.5rem; border-bottom:1px solid var(--border); }
+  .brand { display:flex; align-items:center; gap:.8rem; }
+  .brand-mark { width:38px; height:42px; color:var(--gold); flex:none; }
+  .wordmark { font:700 2rem/.9 var(--serif); letter-spacing:-.04em; }
+  .brand-note { margin-top:.45rem; font:400 .62rem var(--mono); letter-spacing:.2em; text-transform:uppercase; color:var(--muted); }
+  .quiet-button { border:1px solid #756b50; background:transparent; color:var(--text); padding:.65rem 1rem; border-radius:3px; }
+  .quiet-button:hover { background:var(--surface); border-color:var(--gold); }
+  .workspace { display:flex; flex:1; min-height:0; width:100%; max-width:1440px; margin:0 auto; position:relative; }
+  .codex { width:240px; flex:none; border-right:1px solid var(--border); padding:2.5rem 1.7rem; display:flex; flex-direction:column; gap:2rem; }
+  .eyebrow { font:500 .65rem/1.5 var(--mono); text-transform:uppercase; letter-spacing:.18em; color:var(--gold); }
+  .codex h2 { margin:.4rem 0 1.5rem; font:600 1.6rem/1.1 var(--serif); }
+  .codex nav { display:grid; gap:.4rem; }
+  .codex nav button { text-align:left; color:var(--text); background:transparent; border:1px solid transparent; padding:.75rem .4rem; border-radius:3px; }
+  .codex nav button:hover { color:var(--gold); border-color:var(--border); }
+  .codex nav span { color:var(--gold); margin-right:.7rem; }
+  .table-note { margin-top:auto; border-top:1px solid var(--border); padding-top:1.2rem; color:var(--muted); font-size:.88rem; line-height:1.5; }
+  .table-note p { margin:.4rem 0; }
+  main { display:flex; flex-direction:column; flex:1; min-width:0; min-height:0; }
+  .table-heading { padding:1.3rem 2.5rem; display:flex; align-items:center; justify-content:space-between; gap:1rem; border-bottom:1px solid #34382d; }
+  .table-heading h1 { margin:0; font:600 1.1rem var(--serif); }
+  .table-heading span { font:400 .65rem var(--mono); color:var(--muted); }
+  #log { flex:1; min-height:0; overflow-y:auto; padding:1.6rem 2.5rem 2rem; scroll-behavior:smooth; }
+  .welcome { max-width:760px; margin:clamp(1rem,6vh,5rem) auto 2rem; text-align:center; }
+  .welcome-seal { width:100px; height:110px; color:var(--gold); margin:0 auto 1.5rem; }
+  .welcome h2 { font:600 clamp(2.8rem,4.8vw,4.5rem)/.98 var(--serif); letter-spacing:-.035em; margin:1rem 0; }
+  .welcome h2 em { font-weight:500; color:var(--gold); }
+  .welcome p { color:var(--muted); max-width:430px; margin:1.3rem auto 2rem; font-size:1.05rem; line-height:1.5; }
+  .prompts { display:grid; grid-template-columns:1fr 1fr; gap:.7rem; max-width:590px; margin:auto; text-align:left; }
+  .prompt { background:#22281f; border:1px solid #57543e; border-radius:4px; color:var(--text); padding:1rem 1.1rem; text-align:left; transition:border-color .2s,background .2s; }
+  .prompt:hover { border-color:var(--gold); background:#2a3024; }
+  .prompt strong { display:block; font-weight:600; }
+  .prompt small { display:block; color:var(--muted); margin-top:.25rem; font-size:.84rem; }
+  .prompt:last-child { grid-column:1/-1; }
+  .msg { max-width:830px; margin:0 auto 1.7rem; }
   .msg.user { text-align:right; }
-  .bubble { display:inline-block; padding:.6rem .9rem; border-radius:12px; background:#fff; border:1px solid var(--border); text-align:left; max-width:90%; white-space:pre-wrap; }
-  .msg.user .bubble { background:var(--accent); color:#fff; border:none; }
+  .speaker { font:400 .63rem var(--mono); letter-spacing:.13em; text-transform:uppercase; color:var(--gold); margin-bottom:.6rem; }
+  .msg.user .speaker { color:var(--muted); }
+  .bubble { display:inline-block; padding:1rem 1.2rem; border-radius:4px; background:#20271f; border:1px solid #57543e; text-align:left; max-width:95%; white-space:pre-wrap; line-height:1.6; overflow-wrap:anywhere; }
+  .msg.user .bubble { background:#2b3428; color:var(--text); border-color:#60654c; }
   /* When the reply is an A2UI card, drop the bubble chrome so the card stands alone. */
   .bubble.rich { background:transparent; border:none; padding:0; max-width:100%; white-space:normal; }
-  form { display:flex; gap:.5rem; padding:1rem; border-top:1px solid var(--border); background:#fff; }
-  input { flex:1; padding:.7rem; border:1px solid var(--border); border-radius:8px; font-size:1rem; }
-  button { padding:.7rem 1.1rem; border:none; border-radius:8px; background:var(--accent); color:#fff; font-weight:600; cursor:pointer; }
+  .composer { padding:1rem 2.5rem max(.8rem,env(safe-area-inset-bottom)); border-top:1px solid var(--border); background:var(--bg); }
+  form { display:flex; gap:.6rem; max-width:830px; margin:auto; padding:.5rem; border:1px solid #756b50; background:#1d231b; border-radius:5px; }
+  input { flex:1; min-width:0; padding:.7rem; border:none; background:transparent; color:var(--text); font-size:1rem; border-radius:2px; }
+  input::placeholder { color:var(--muted); opacity:1; }
+  .send { padding:.7rem 1.2rem; border:1px solid var(--gold); border-radius:3px; background:var(--gold); color:#27271b; font-weight:700; }
+  .composer-note { text-align:center; color:var(--muted); font-size:.72rem; margin:.6rem 0 0; }
+  .sr-only { position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap; }
 
-  /* --- A2UI component styles (Card, Column, Row, Text, Divider, List, Image, Icon) --- */
-  .a2card { border:1px solid var(--border); border-radius:12px; padding:1rem; background:#fff; box-shadow:0 1px 3px rgba(0,0,0,.06); max-width:100%; }
+  /* --- A2UI component styles (Card, Column, Row, Text, Divider, List, Image, Video, Icon) --- */
+  .a2card { color:var(--ink); border:1px solid #cfb77b; border-radius:3px; padding:1.5rem; background:var(--paper); box-shadow:inset 0 0 0 5px #eee2c4,inset 0 0 0 6px #b29b693f,0 12px 40px #0003; max-width:100%; min-width:min(360px,100%); position:relative; }
   .a2card + .a2card, .a2col > .a2card { margin-top:.6rem; }
   .a2col { display:flex; flex-direction:column; gap:.4rem; }
   .a2row { display:flex; flex-direction:row; gap:.6rem; align-items:center; flex-wrap:wrap; }
   .a2row.between { justify-content:space-between; }
   .a2text { margin:0; line-height:1.4; }
-  .a2text.a2-h1 { font-size:1.5rem; font-weight:700; }
-  .a2text.a2-h2 { font-size:1.25rem; font-weight:700; }
+  .a2text.a2-h1 { font:700 2rem/1.1 var(--serif); margin-bottom:.4rem; }
+  .a2text.a2-h2 { font:700 1.6rem/1.15 var(--serif); margin-bottom:.3rem; }
   .a2text.a2-h3 { font-size:1.1rem; font-weight:600; }
   .a2text.a2-h4 { font-size:1rem; font-weight:600; }
-  .a2text.a2-caption { font-size:.85rem; color:#666; }
+  .a2text.a2-caption { font-size:.85rem; color:#615641; }
+  .stat-pill { display:inline-block; align-self:flex-start; font:500 .75rem var(--mono); background:#d7cba9; border:1px solid #9c8c69; padding:.45rem .65rem; border-radius:3px; }
+  .hp-meter { display:block; width:100%; height:7px; border:0; margin:.5rem 0 .6rem; border-radius:0; accent-color:#426344; background:#c5b994; }
+  .hp-meter::-webkit-progress-bar { background:#c5b994; }
+  .hp-meter::-webkit-progress-value { background:#426344; }
+  .hp-meter::-moz-progress-bar { background:#426344; }
   .a2divider { border:none; border-top:1px solid var(--border); margin:.4rem 0; width:100%; }
-  .a2img { max-width:100%; border-radius:8px; display:block; }
-  .material-symbols-outlined { font-family:'Material Symbols Outlined'; font-size:1.25rem; line-height:1; vertical-align:middle; color:var(--accent); }
+  .media-frame { margin:1rem 0 0; padding:.45rem; border:1px solid #ac945d; background:#181d16; border-radius:3px; }
+  .a2img,.a2video { max-width:100%; max-height:460px; width:auto; border-radius:1px; display:block; margin:auto; object-fit:contain; }
+  .media-frame figcaption { font:400 .65rem var(--mono); color:var(--text); padding:.7rem .4rem .2rem; }
+  .material-symbols-outlined { font-family:'Material Symbols Outlined'; font-size:1.25rem; line-height:1; vertical-align:middle; color:#71602e; }
+  .thinking { display:flex; align-items:center; gap:.8rem; color:var(--muted); }
+  .thinking::before { content:''; width:12px; height:12px; background:var(--gold); transform:rotate(45deg); animation:think 1.5s ease-in-out infinite; }
+  .tool-trail { display:flex; flex-wrap:wrap; gap:.5rem; margin-bottom:.8rem; }
+  .tool-chip { font:400 .66rem var(--mono); color:var(--gold); border:1px solid #76633c; border-radius:2px; padding:.35rem .5rem; }
+  .dice-panel { display:flex; align-items:center; gap:1.4rem; background:#262d21; border:1px solid #8b774b; padding:1.2rem; margin-bottom:1rem; border-radius:3px; white-space:normal; }
+  .die { display:grid; place-items:center; width:84px; height:92px; flex:none; clip-path:polygon(50% 0,96% 25%,96% 75%,50% 100%,4% 75%,4% 25%); background:var(--gold); color:#23271c; font:700 2.4rem var(--serif); animation:cast 1.1s cubic-bezier(.16,1,.3,1) both; }
+  .dice-panel strong { display:block; font:600 1.8rem var(--serif); }
+  .dice-panel small { color:var(--muted); font-family:var(--mono); font-size:.72rem; }
+  .error-text { color:#ffd0b5; }
+  @keyframes think { 50% { opacity:.35; transform:rotate(135deg) scale(.8); } }
+  @keyframes cast { 0% { transform:translateY(-12px) rotate(-360deg) scale(.6); } 70% { transform:translateY(2px) rotate(7deg) scale(1.04); } 100% { transform:none; } }
+  @media(max-width:900px) { .codex { width:190px; padding:2rem 1.1rem; } .table-heading,#log { padding-left:1.5rem; padding-right:1.5rem; } .composer { padding-left:1.5rem; padding-right:1.5rem; } }
+  @media(max-width:650px) { .masthead { padding:1rem; } .wordmark { font-size:1.7rem; } .brand-mark { width:30px; height:34px; } .brand-note { font-size:.5rem; } .quiet-button { padding:.55rem .7rem; font-size:.8rem; } .codex { display:none; } .table-heading { padding:.8rem 1rem; } #log { padding:1rem; } .welcome { margin:1.5rem auto; } .welcome-seal { width:65px; height:72px; margin-bottom:1rem; } .welcome h2 { font-size:2.8rem; } .welcome p { font-size:.95rem; margin:1rem auto 1.4rem; } .prompt { padding:.8rem; } .prompt small { font-size:.76rem; } .composer { padding:.75rem 1rem max(.65rem,env(safe-area-inset-bottom)); } .send { padding:.7rem .85rem; } .bubble { max-width:100%; } .a2card { padding:1.2rem; } }
+  @media(prefers-reduced-motion:reduce) { *,*::before,*::after { animation:none!important; transition:none!important; scroll-behavior:auto!important; } }
 </style>
 </head>
 <body>
-<header>Your Agent</header>
-<div id="log"></div>
-<form id="form">
-  <input id="input" placeholder="Ask something…" autocomplete="off" autofocus>
-  <button>Send</button>
-</form>
+<header class="masthead">
+  <div class="brand">
+    <svg class="brand-mark" viewBox="0 0 100 110" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M50 3 96 28 96 82 50 107 4 82 4 28Z M50 3 25 68 75 68Z M4 28 25 68 4 82 M96 28 75 68 96 82 M25 68 50 107 75 68 M4 28 96 28"/></svg>
+    <div><div class="wordmark">RealmForge</div><div class="brand-note">The GM’s table</div></div>
+  </div>
+  <button class="quiet-button" id="new-session" type="button">New chapter <span aria-hidden="true">↗</span></button>
+</header>
+<div class="workspace">
+  <aside class="codex" aria-label="Campaign tools">
+    <div><div class="eyebrow">Your campaign</div><h2>The field guide</h2>
+      <nav aria-label="Quick requests">
+        <button type="button" data-prompt="List my heroes in the party"><span aria-hidden="true">♜</span>Party ledger</button>
+        <button type="button" data-prompt="Roll 1d20+3 for initiative"><span aria-hidden="true">◇</span>Dice &amp; chance</button>
+        <button type="button" data-prompt="Look up a Goblin"><span aria-hidden="true">♞</span>The bestiary</button>
+        <button type="button" data-prompt="Simulate my party against an Owlbear using the Python sandbox. State your combat assumptions and report the win percentage."><span aria-hidden="true">⚔</span>Encounters</button>
+        <button type="button" data-prompt="Forge a portrait of Valen Ironclad with his runic shield in a dark fantasy style"><span aria-hidden="true">✧</span>The forge</button>
+      </nav>
+    </div>
+    <div class="table-note"><div class="eyebrow">A note for the GM</div><p>Start with your party. Then test the odds before you face the encounter.</p><p>Dice results come from real rolls.</p></div>
+  </aside>
+  <main aria-label="Campaign conversation">
+    <div class="table-heading"><h1>The adventure journal</h1><span>PARTY · CHANCE · LORE</span></div>
+    <div id="log" role="log" aria-label="Conversation" aria-live="polite" aria-relevant="additions text">
+      <section class="welcome" id="welcome" aria-label="Start an adventure">
+        <svg class="welcome-seal" viewBox="0 0 100 110" fill="none" stroke="currentColor" stroke-width="1" aria-hidden="true"><path d="M50 3 96 28 96 82 50 107 4 82 4 28Z M50 3 25 68 75 68Z M4 28 25 68 4 82 M96 28 75 68 96 82 M25 68 50 107 75 68 M4 28 96 28"/><circle cx="50" cy="52" r="38" stroke-dasharray="1 6"/></svg>
+        <div class="eyebrow">Pull up a chair</div>
+        <h2>Build a party.<br><em>Test your odds.</em></h2>
+        <p>Your heroes, their stories, and the next encounter. Bring them together at one table.</p>
+        <div class="prompts">
+          <button class="prompt" type="button" data-prompt="List my heroes in the party"><strong>Meet the party <span aria-hidden="true">↗</span></strong><small>Open your hero sheets</small></button>
+          <button class="prompt" type="button" data-prompt="Roll 1d20+3 for initiative"><strong>Roll initiative <span aria-hidden="true">↗</span></strong><small>A d20 and a little chance</small></button>
+          <button class="prompt" type="button" data-prompt="Look up a Goblin"><strong>Open the bestiary <span aria-hidden="true">↗</span></strong><small>Know what you are facing</small></button>
+          <button class="prompt" type="button" data-prompt="Simulate my party against an Owlbear using the Python sandbox. State your combat assumptions and report the win percentage."><strong>Test an encounter <span aria-hidden="true">↗</span></strong><small>Your party versus an Owlbear</small></button>
+          <button class="prompt" type="button" data-prompt="Forge a portrait of Valen Ironclad with his runic shield in a dark fantasy style"><strong>Forge a portrait <span aria-hidden="true">↗</span></strong><small>Give your hero a face</small></button>
+        </div>
+      </section>
+    </div>
+    <div class="composer">
+      <form id="form">
+        <label class="sr-only" for="input">Your next move</label>
+        <input id="input" placeholder="What is your next move?" autocomplete="off" maxlength="8000" required>
+        <button class="send" type="submit">Send <span aria-hidden="true">↑</span></button>
+      </form>
+      <p class="composer-note" id="status" role="status">Check the details. You make the final call.</p>
+    </div>
+  </main>
+</div>
 
 <script>
 const log = document.getElementById("log");
 const form = document.getElementById("form");
 const input = document.getElementById("input");
+const status = document.getElementById("status");
+const welcome = document.getElementById("welcome").cloneNode(true);
+let userId = crypto.randomUUID();
+let sending = false;
 
 function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
 
 function bubble(who) {
   const m = el("div", "msg " + who);
+  m.appendChild(el("div", "speaker", who === "user" ? "You · Game master" : "RealmForge"));
   const b = el("div", "bubble");
   m.appendChild(b); log.appendChild(m); log.scrollTop = log.scrollHeight;
   return b;
@@ -64,7 +178,7 @@ function bubble(who) {
 
 /* ----------------------------------------------------------------------------
  * A2UI mini-renderer (v0.8 Basic Catalog subset).
- * Renders Card / Column / Row / Text / Divider / List / Image / Icon.
+ * Renders Card / Column / Row / Text / Divider / List / Image / Video / Icon.
  * Anything else falls back to plain text (see renderReply). All text goes in via
  * textContent and image URLs are validated, so agent output can't inject HTML.
  * -------------------------------------------------------------------------- */
@@ -88,6 +202,55 @@ function childIds(props) {
 
 // A2UI icon names are camelCase (locationOn); Material Symbols wants snake_case.
 function iconName(n) { return String(n || "").replace(/([a-z0-9])([A-Z])/g, "$1_$2").replace(/\s+/g, "_").toLowerCase(); }
+
+function safeMediaUrl(value) {
+  try { const url = new URL(value); return url.protocol === "https:" ? url : null; }
+  catch { return null; }
+}
+
+function mediaFrame(src, alt = "Forged illustration") {
+  const url = safeMediaUrl(src);
+  if (!url) return null;
+  const isVideo = /\.mp4$/i.test(url.pathname);
+  const figure = el("figure", "media-frame");
+  const media = el(isVideo ? "video" : "img", isVideo ? "a2video" : "a2img");
+  media.src = url.href;
+  if (isVideo) { media.controls = true; media.playsInline = true; media.preload = "metadata"; media.setAttribute("aria-label", "Forged video"); }
+  else { media.alt = alt; media.loading = "lazy"; }
+  figure.appendChild(media);
+  figure.appendChild(el("figcaption", null, isVideo ? "From the forge · Play the clip" : "From the forge · " + alt));
+  return figure;
+}
+
+// Keep generated asset URLs out of the journal text. Render only HTTPS media.
+function appendText(container, text) {
+  const pattern = /https:\/\/storage\.googleapis\.com\/[^\s<>"'\[\]()]+/gi;
+  let cursor = 0;
+  for (const match of text.matchAll(pattern)) {
+    const src = match[0].replace(/[.,;]+$/, "");
+    const url = safeMediaUrl(src);
+    if (!url || !/\.(mp4|png|jpe?g|webp)$/i.test(url.pathname)) continue;
+    if (match.index > cursor) container.appendChild(el("span", null, text.slice(cursor, match.index)));
+    container.appendChild(mediaFrame(src));
+    cursor = match.index + src.length;
+  }
+  if (cursor < text.length) container.appendChild(el("span", null, text.slice(cursor)));
+}
+
+function renderDice(data) {
+  if (!Array.isArray(data.rolls) || !data.rolls.length || !data.rolls.every(Number.isInteger) || !Number.isFinite(data.total)) return null;
+  const panel = el("div", "dice-panel");
+  panel.setAttribute("aria-label", `${data.dice}: ${data.rolls.join(", ")}. Total ${data.total}`);
+  const die = el("div", "die", data.rolls.join(" · "));
+  die.setAttribute("aria-hidden", "true");
+  const result = el("div");
+  result.appendChild(el("div", "eyebrow", data.is_crit_success ? "Natural 20" : data.is_crit_fumble ? "Natural 1" : "The dice have spoken"));
+  result.appendChild(el("strong", null, "Total " + data.total));
+  const modifier = Number.isFinite(data.modifier) ? data.modifier : 0;
+  result.appendChild(el("small", null, `${data.dice} · ${data.rolls.join(" + ")}${modifier ? (modifier > 0 ? " + " : " − ") + Math.abs(modifier) : ""}`));
+  panel.append(die, result);
+  return panel;
+}
 
 function buildNode(id, comps, seen) {
   if (!id || seen.has(id)) return null;   // missing / cycle guard
@@ -116,15 +279,25 @@ function buildNode(id, comps, seen) {
       const hint = String(props.usageHint || "body").toLowerCase();
       if (["h1", "h2", "h3", "h4", "h5", "h6"].includes(hint)) t.classList.add("a2-" + hint);
       else if (hint === "caption") t.classList.add("a2-caption");
-      t.textContent = boundStr(props.text);
+      const text = boundStr(props.text);
+      appendText(t, text);
+      if (/^h[1-6]$/.test(hint)) { t.setAttribute("role", "heading"); t.setAttribute("aria-level", hint[1]); }
+      if (/^(Level|LV|Attack|Defense|AC|CR|XP)\b[:\s]/i.test(text)) t.classList.add("stat-pill");
+      const hp = text.match(/\bHP\s*:?\s*(\d+)\s*\/\s*(\d+)/i);
+      if (hp && Number(hp[2]) > 0) {
+        const meter = el("progress", "hp-meter");
+        meter.max = Number(hp[2]); meter.value = Math.min(Number(hp[1]), meter.max);
+        meter.setAttribute("aria-label", `Health: ${hp[1]} of ${hp[2]}`);
+        t.appendChild(meter);
+      }
       return t;
     }
     case "Divider":
       return el("hr", "a2divider");
-    case "Image": {
+    case "Image":
+    case "Video": {
       const src = boundStr(props.url || props.src);
-      if (!/^https?:\/\//i.test(src)) return null;   // only allow safe URLs
-      const img = el("img", "a2img"); img.src = src; img.alt = boundStr(props.alt) || ""; return img;
+      return mediaFrame(src, boundStr(props.alt) || "Generated fantasy illustration");
     }
     case "Icon": {
       const s = el("span", "material-symbols-outlined"); s.textContent = iconName(boundStr(props.name) || props.name); return s;
@@ -170,8 +343,39 @@ function renderReply(b, parts) {
   const texts = parts.filter(p => p && (p.kind === "text" || (!p.kind && p.text))).map(p => p.text || "");
   const a2ui = parts.filter(p => p && p.kind === "a2ui" && p.data).map(p => p.data);
 
-  const textStr = texts.join("\n").trim();
-  if (textStr) b.appendChild(el("div", null, textStr));
+  let textStr = texts.join("\n").trim();
+  const tools = parts.filter(p => p && p.kind === "tool");
+  if (tools.length) {
+    const labels = { list_heroes:"Party loaded", get_hero:"Hero found", create_or_update_hero:"Hero saved", update_hero_hp:"Health updated", roll_dice:"Dice rolled", lookup_monster:"Bestiary consulted", generate_item_image:"Portrait requested", generate_item_video:"Video requested", code_execution:"Simulation run" };
+    const trail = el("div", "tool-trail");
+    for (const name of new Set(tools.map(p => p.name))) {
+      const result = tools.find(p => p.name === name);
+      const data = result.data?.result ?? result.data;
+      const failed = data?.error || (name === "code_execution" && data?.outcome !== "OUTCOME_OK");
+      trail.appendChild(el("span", "tool-chip", failed ? "Tool returned an error" : labels[name] || "Tool completed"));
+    }
+    b.appendChild(trail);
+    for (const part of tools.filter(p => p.name === "roll_dice")) {
+      const die = renderDice(part.data?.result ?? part.data ?? {});
+      if (die) b.appendChild(die);
+    }
+  }
+  // A completed sandbox result remains useful if the model's final reply is empty.
+  // Display the verbatim tool output, without generating a replacement summary.
+  if (!a2ui.length) {
+    const execution = tools.find(p => p.name === "code_execution" && p.data?.outcome === "OUTCOME_OK" && p.data?.output);
+    if (execution) {
+      b.classList.add("rich");
+      const card = el("section", "a2card");
+      card.appendChild(el("h2", "a2text a2-h2", "Verified sandbox result"));
+      const output = el("p", "a2text", execution.data.output);
+      output.style.whiteSpace = "pre-wrap";
+      card.appendChild(output);
+      b.appendChild(card);
+      if (textStr.includes("finish_reason=STOP with empty parts")) textStr = "The simulation completed. No model summary was returned.";
+    }
+  }
+  if (textStr) { const text = el("div"); appendText(text, textStr); b.appendChild(text); }
 
   if (a2ui.length) {
     b.classList.add("rich");
@@ -181,16 +385,47 @@ function renderReply(b, parts) {
   log.scrollTop = log.scrollHeight;
 }
 
-// The proxy returns { parts: [{kind:"text",text} | {kind:"a2ui",data}] }.
+function setBusy(value) {
+  sending = value;
+  form.setAttribute("aria-busy", String(value));
+  document.querySelectorAll("button").forEach(button => { button.disabled = value; });
+  status.textContent = value ? "RealmForge is working on your request…" : "Check the details. You make the final call.";
+}
+
+document.addEventListener("click", event => {
+  const button = event.target.closest("[data-prompt]");
+  if (!button || sending) return;
+  input.value = button.dataset.prompt;
+  form.requestSubmit();
+});
+
+document.getElementById("new-session").addEventListener("click", () => {
+  if (sending) return;
+  log.replaceChildren(welcome.cloneNode(true));
+  userId = crypto.randomUUID();
+  input.value = "";
+  input.focus();
+});
+
+// Tool data and A2UI use the same structured response as plain chat.
 form.addEventListener("submit", async (ev) => {
   ev.preventDefault();
   const text = input.value.trim();
-  if (!text) return;
+  if (!text || sending) return;
+  document.getElementById("welcome")?.remove();
+  setBusy(true);
   bubble("user").textContent = text;
   input.value = "";
-  const b = bubble("agent"); b.textContent = "…";
+  const b = bubble("agent");
+  b.appendChild(el("div", "thinking", "Consulting the field guide…"));
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 360000);
+  const notice = setTimeout(() => {
+    const thinking = b.querySelector(".thinking");
+    if (thinking) thinking.textContent = "The forge is still at work. Keep this page open…";
+  }, 30000);
   try {
-    const res = await fetch("/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ message: text }) });
+    const res = await fetch("/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ message: text, user_id: userId }), signal: controller.signal });
     // Read as text first, then parse. If the proxy ever returns a non-JSON error
     // page (e.g. a plain "Internal Server Error"), show that body instead of a
     // cryptic "Unexpected token" JSON error.
@@ -200,7 +435,12 @@ form.addEventListener("submit", async (ev) => {
     catch { throw new Error(`Server returned non-JSON (HTTP ${res.status}). ${raw.slice(0, 300)}`); }
     renderReply(b, data.parts || []);
   } catch (e) {
-    b.textContent = "Error: " + e.message;
+    b.classList.add("error-text");
+    b.textContent = e.name === "AbortError" ? "This request took too long. Try a shorter request." : "Error: " + e.message;
+  } finally {
+    clearTimeout(timer);
+    clearTimeout(notice);
+    setBusy(false);
   }
 });
 </script>

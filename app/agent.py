@@ -13,6 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import base64
 import datetime
 import json
 import random
@@ -34,6 +35,7 @@ from google.adk.code_executors.agent_engine_sandbox_code_executor import (
     AgentEngineSandboxCodeExecutor,
 )
 from google.adk.models import Gemini
+from google.adk.models.llm_request import LlmRequest
 from google.adk.tools import ToolContext
 from google.adk.tools.preload_memory_tool import PreloadMemoryTool
 from google.genai import types
@@ -449,8 +451,21 @@ async def generate_item_video(
     }
 
 
+class StableUserMemoryTool(PreloadMemoryTool):
+    """Anonymous A2A chapters already have session history, not a stable identity."""
+
+    async def process_llm_request(self, *, tool_context: ToolContext, llm_request: LlmRequest) -> None:
+        # ADK assigns this prefix to unauthenticated A2A callers. Do not turn
+        # their context ID into a cross-session identity or block on Memory Bank.
+        if tool_context.user_id.startswith("A2A_USER_"):
+            return
+        await super().process_llm_request(tool_context=tool_context, llm_request=llm_request)
+
+
 async def generate_memories_callback(callback_context: CallbackContext):
     """WRITE: after each turn, send the session events to Memory Bank for durable fact extraction."""
+    if callback_context.user_id.startswith("A2A_USER_"):
+        return None
     await callback_context.add_session_to_memory()
     return None
 
@@ -465,13 +480,20 @@ instruction = schema_manager.generate_system_prompt(
         "You are RealmForge, an interactive RPG party builder and encounter assistant. "
         "You manage heroes stored in Firestore, display their stats and abilities, and help the player "
         "form and manage their adventuring team for turn-based encounters. "
-        "You remember the player's preferences, favorite party comps, strategy notes, and past adventures across conversations. "
+        "You can recall preferences and strategy notes across conversations when the runtime provides a stable user identity. "
         "Use the Firestore tools to list, inspect, recruit, update, or heal heroes. "
         "Use the roll_dice tool whenever rolling dice for attacks, checks, or damage. "
         "Use the lookup_monster tool to fetch real stats and abilities for any monster or boss from the public bestiary database. "
         "Use the generate_item_image tool whenever the player wants an illustration or portrait for a hero, monster, spell, or item. "
         "Use the generate_item_video tool whenever the player wants a short video animation of a hero, monster, spell, or item. "
-        "You have access to a secure Python sandbox via code execution to perform complex combat math, probability analyses, simulation runs, or stat calculations."
+        "For combat simulations, probability analyses, and complex calculations, you MUST execute Python in the secure sandbox. "
+        "First fetch the real hero and monster data with the tools. To invoke the sandbox, emit an intermediate response "
+        "containing only a fenced Python block: ```python followed by a newline, executable Python, a newline, and ```. "
+        "The runtime executes that block and returns its output. Print the trial count, wins, win percentage, and assumptions. "
+        "Use a fixed random seed for reproducible simulations and bound every encounter to at most 100 rounds. "
+        "Wait for the execution result before reporting any simulation numbers. Never invent completed trials or results. "
+        "If execution fails, explain the failure instead of claiming a result. "
+        "Do not put A2UI JSON inside the Python block. After execution, format the final result as A2UI."
     ),
     workflow_description="Analyze the request, call the appropriate tools (Firestore, dice roller, monster bestiary, image/video generator, Python sandbox, or memory), and return structured UI when appropriate.",
     ui_description=(
@@ -486,9 +508,14 @@ instruction = schema_manager.generate_system_prompt(
         '{"Image": {"url": {"literalString": "https://..."}}}. Never point an '
         "Image at a bare filename, an artifact name, or a non-http(s) path. If you do "
         "not have a public URL, add a short Text line noting the image instead. "
+        "For generated video, put the exact public .mp4 URL in a Text row. The frontend turns it into a video player. "
         "No markdown in text; use the usageHint property ('h1', 'h2', 'body') for "
         "headings and emphasis. "
-        "Output ONLY the raw A2UI JSON array — no prose, and never wrap it in "
+        "For hero sheets, use an h2 Text row for each hero name, then write health "
+        "as 'HP 23/30'. Put 'Level 1', 'Attack 18', and 'Defense 16' in separate "
+        "Text rows inside a Row. Always use the actual tool results. "
+        "For FINAL responses, output ONLY the raw A2UI JSON array. Intermediate Python sandbox requests "
+        "must use the fenced code protocol described above, without A2UI. For final replies, use no prose and never wrap the array in "
         "<a2a_datapart_json> tags or 'kind'/'data'/'metadata' objects."
     ),
     include_schema=True,
@@ -503,8 +530,11 @@ root_agent = Agent(
         retry_options=types.HttpRetryOptions(attempts=3),
     ),
     instruction=instruction,
+    generate_content_config=types.GenerateContentConfig(
+        thinking_config=types.ThinkingConfig(thinking_level=types.ThinkingLevel.LOW),
+    ),
     tools=[
-        PreloadMemoryTool(),
+        StableUserMemoryTool(),
         list_heroes,
         get_hero,
         create_or_update_hero,
