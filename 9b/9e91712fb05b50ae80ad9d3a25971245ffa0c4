@@ -1,0 +1,21 @@
+.gitignore
+  s_42e4eab7a5b11c::t_4d19874e119a98 226
+tests/unit/test_frontend_proxy.py
+  s_42e4eab7a5b11c::t_99418451d20523 19,99-124
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "9b9e91712fb05b50ae80ad9d3a25971245ffa0c4",
+  "prompts": {},
+  "sessions": {
+    "s_42e4eab7a5b11c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a161d0-912e-7d92-b926-3368ee0b84bf",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Muhammad Mugni Hadi <mugni@rukita.co>"
+    }
+  }
+}
