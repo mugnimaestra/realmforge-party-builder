@@ -1,0 +1,14 @@
+README.md
+  h_2d220f5439def3 1-64,66,68-72,74,76-78,80-84,96,104-109,117,127-128,130,132,134-138,140,142-144,150,152,156-159,166-170,172,177-185,187-192,194-200
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "682b401e6f6d4a7957ff3ebd6fcb75ea69550196",
+  "prompts": {},
+  "humans": {
+    "h_2d220f5439def3": {
+      "author": "Muhammad Mugni Hadi <mugni@rukita.co>"
+    }
+  }
+}
