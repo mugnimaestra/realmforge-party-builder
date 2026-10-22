@@ -1,4 +1,4 @@
-"""Minimal FastAPI proxy for a deployed A2A agent (Agent Runtime, agents-cli 1.1.0+).
+"""Minimal FastAPI proxy for a local or deployed A2A agent.
 
 The browser talks ONLY to this proxy (same origin, no CORS, no GCP creds in the
 browser). The proxy authenticates with Application Default Credentials and
@@ -8,6 +8,7 @@ structured parts the chat UI knows how to show:
   * {"kind": "text", "text": ...}  -> a normal chat bubble
   * {"kind": "a2ui", "data": ...}  -> one A2UI message (beginRendering /
     surfaceUpdate); static/index.html renders these as a card.
+  * {"kind": "tool", "name": ..., "data": ...} -> a real tool result.
 
 Why A2A: agents-cli 1.1.0 (GA) deploys ADK agents to Agent Runtime as A2A agents
 and no longer registers the reasoning-engine operation schema the old
@@ -19,6 +20,7 @@ both A2A and plain ADK 1.1.0 deployments (the container serves A2A either way).
 
 Run:
   pip install -r requirements.txt
+  # Optional: without this variable, use the local agent on port 8000.
   export AGENT_ENGINE_RESOURCE_NAME="projects/.../locations/.../reasoningEngines/..."
   export AGENT_DIRECTORY="app"   # your agent's app directory (agents-cli-manifest.yaml)
   python main.py                 # -> http://localhost:8080
@@ -38,6 +40,7 @@ from a2a.types import (
     Part,
     Role,
     TaskArtifactUpdateEvent,
+    TaskState,
     TextPart,
     TransportProtocol,
 )
@@ -45,30 +48,35 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
-RESOURCE = os.environ["AGENT_ENGINE_RESOURCE_NAME"]
+RESOURCE = os.environ.get("AGENT_ENGINE_RESOURCE_NAME", "")
 # The agent's app directory (matches agent_directory in agents-cli-manifest.yaml).
 AGENT_DIRECTORY = os.environ.get("AGENT_DIRECTORY", "app")
 # Location is embedded in the resource name: projects/<p>/locations/<loc>/reasoningEngines/<id>.
-LOCATION = RESOURCE.split("/locations/")[1].split("/")[0]
+LOCATION = RESOURCE.split("/locations/")[1].split("/")[0] if RESOURCE else None
 
 # A2A endpoint for an Agent Runtime deployment, via the Agent Engine HTTP
 # passthrough. The card lives at the well-known path under this base.
 A2A_BASE = (
     f"https://{LOCATION}-aiplatform.googleapis.com/reasoningEngines/v1/"
     f"{RESOURCE}/api/a2a/{AGENT_DIRECTORY}"
-)
+) if RESOURCE else "http://localhost:8000/a2a/app"
 A2A_CARD_URL = f"{A2A_BASE}/.well-known/agent-card.json"
 
 # The agent tags its A2UI data parts with this mime type.
 _A2UI_MIME = "application/json+a2ui"
 
 # One set of ADC credentials, refreshed per request (access tokens expire ~1h).
-_creds, _ = google.auth.default(
-    scopes=["https://www.googleapis.com/auth/cloud-platform"]
-)
+_creds = None
 
 
 def _auth_headers() -> dict[str, str]:
+    global _creds
+    if not RESOURCE:
+        return {}
+    if _creds is None:
+        _creds, _ = google.auth.default(
+            scopes=["https://www.googleapis.com/auth/cloud-platform"]
+        )
     _creds.refresh(google.auth.transport.requests.Request())
     return {
         "Authorization": f"Bearer {_creds.token}",
@@ -118,7 +126,7 @@ def _extract_parts(parts: list) -> list[dict]:
     Text parts pass through as {"kind": "text"}. A2UI data parts (tagged
     application/json+a2ui) become {"kind": "a2ui", "data": <message>} so the UI
     renders the card; each data part is one A2UI message (beginRendering or
-    surfaceUpdate).
+    surfaceUpdate). Function responses retain the tool name and result.
     """
     out: list[dict] = []
     for p in parts:
@@ -130,6 +138,11 @@ def _extract_parts(parts: list) -> list[dict]:
             mime = meta.get("mimeType") if isinstance(meta, dict) else None
             if mime == _A2UI_MIME:
                 out.append({"kind": "a2ui", "data": root.data})
+            elif meta.get("adk_type", meta.get("type")) == "function_response":
+                data = root.data
+                out.append({"kind": "tool", "name": data.get("name", ""), "data": data.get("response", {})})
+            elif meta.get("adk_type", meta.get("type")) == "code_execution_result":
+                out.append({"kind": "tool", "name": "code_execution", "data": root.data})
         elif isinstance(root, FilePart):
             uri = getattr(getattr(root, "file", None), "uri", None)
             if uri:
@@ -167,6 +180,11 @@ async def chat(req: Request):
         last_task = None
         got_artifact_update = False
         async for event in a2a_client.send_message(msg):
+            if isinstance(event, Message):
+                parts.extend(_extract_parts(event.parts))
+                if event.context_id:
+                    _contexts[user_id] = event.context_id
+                continue
             if not isinstance(event, tuple):
                 continue
             task, update = event
@@ -183,10 +201,16 @@ async def chat(req: Request):
             for artifact in getattr(last_task, "artifacts", None) or []:
                 parts.extend(_extract_parts(artifact.parts))
 
-    if not parts:
+        if last_task is not None:
+            status_message = getattr(getattr(last_task, "status", None), "message", None)
+            failed = last_task.status.state in (TaskState.failed, TaskState.canceled, TaskState.rejected)
+            if status_message and (failed or not parts):
+                parts.extend(_extract_parts(status_message.parts))
+
+    if not any(part["kind"] in ("text", "a2ui") for part in parts):
         # The turn produced no text or UI (e.g. the agent only ran tools, or a
         # tool stalled). Be honest rather than silent.
-        parts = [{"kind": "text", "text": "(The agent didn't return a reply.)"}]
+        parts.append({"kind": "text", "text": "The agent did not return a final reply. Try a shorter request or check the server logs."})
     return JSONResponse({"parts": parts})
 
 

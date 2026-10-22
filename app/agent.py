@@ -13,6 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import base64
 import datetime
 import json
 import random
@@ -488,6 +489,9 @@ instruction = schema_manager.generate_system_prompt(
         "not have a public URL, add a short Text line noting the image instead. "
         "No markdown in text; use the usageHint property ('h1', 'h2', 'body') for "
         "headings and emphasis. "
+        "For hero sheets, use an h2 Text row for each hero name, then write health "
+        "as 'HP 23/30'. Put 'Level 1', 'Attack 18', and 'Defense 16' in separate "
+        "Text rows inside a Row. Always use the actual tool results. "
         "Output ONLY the raw A2UI JSON array — no prose, and never wrap it in "
         "<a2a_datapart_json> tags or 'kind'/'data'/'metadata' objects."
     ),

@@ -56,7 +56,6 @@ def get_session_service():
             # Runtime-injected agent-engine region, not GOOGLE_CLOUD_LOCATION
             # (which agent.py pins to "global").
             location=os.environ.get("GOOGLE_CLOUD_AGENT_ENGINE_LOCATION")
-            or os.environ.get("GOOGLE_CLOUD_LOCATION")
             or LOCATION,
             agent_engine_id=agent_engine_id,
         )
@@ -85,7 +84,6 @@ def get_memory_service():
     project = os.environ.get("GOOGLE_CLOUD_PROJECT") or PROJECT_ID
     location = (
         os.environ.get("GOOGLE_CLOUD_AGENT_ENGINE_LOCATION")
-        or os.environ.get("GOOGLE_CLOUD_LOCATION")
         or LOCATION
     )
     return VertexAiMemoryBankService(
