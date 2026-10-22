@@ -1,90 +1,112 @@
-# RealmForge: Turn-Based RPG Party Builder
+# RealmForge
 
-**RealmForge** is an interactive, conversational RPG companion built on Google's Agent Development Kit (ADK) and Gemini. It enables players to recruit and manage a party of adventurers in Google Cloud Firestore, roll polyhedral dice, query monsters from the D&D 5e Bestiary, run complex combat simulations in a secure Vertex AI Agent Engine code sandbox, generate custom fantasy portraits via Gemini (`gemini-3.1-flash-lite-image`), generate cinematic animations via Google Omni (`gemini-omni-flash-preview`), and render rich turn-based UI cards with **A2UI**.
+**Your party, at the table.** A conversational RPG companion built with Google
+ADK, Gemini, Firestore, and A2UI. Manage heroes, roll dice, open the bestiary,
+simulate encounters, and forge fantasy portraits and video from one chat.
 
-![RealmForge Demo Walkthrough](docs/demo.gif)
+[![RealmForge demo: hero sheets, dice, and the bestiary](docs/demo.gif)](docs/demo.mp4)
 
-[Watch the 50-second demo with music](docs/demo.mp4) · [Version without music](docs/demo-nobgm.mp4)
+**[Watch the demo with music](docs/demo.mp4)** · [SFX-only version](docs/demo-nobgm.mp4) · [Editable video source](demo/README.md)
 
-The demo uses real tool output and generated media from a verified frontend
-conversation. Waiting time is edited. The encounter percentage comes from a
-simplified sandbox simulation; its assumptions are shown in the video.
+50 seconds · 1080p · 60 fps · 120 BPM. The 12-second preview and full reel use
+real agent responses and generated media. Waiting time is edited. The shown
+roll is **12 + 3 = 15**; the encounter result is from a simplified simulation
+whose assumptions appear on screen.
 
-The frontend now uses a dark fantasy tabletop theme, quick prompts, hero health
-bars and stat pills, actual-roll animation, and framed inline images and video.
-It supports keyboard focus, reduced motion, and narrow mobile screens.
+## Current state
 
----
+Verified on **2026-10-22**: all five core prompts called their real tools through
+the local frontend in one conversation, and passed again after the final agent
+changes. Portrait generation and optional video generation both succeeded.
+The unit suite passed **18 tests**. These checks used live cloud tools through
+the local agent; the deployed runtime has not been revalidated.
 
-## ⚔️ Implemented Features & Architecture
+The frontend has a dark fantasy tabletop theme, five quick prompts, hero HP
+bars and stat pills, dice animation driven by the actual result, inline images
+and video, and a thinking state. Browser checks covered **1440 px and 375 px**,
+keyboard focus, reduced motion, and selected text contrast of at least 4.5:1.
+It remains one vanilla HTML/JS file with no frontend build step.
 
-- **🧠 Cross-Session Long-Term Memory (Vertex AI Memory Bank)**:
-  - Loads and stores party preferences and combat notes with `PreloadMemoryTool` and `generate_memories_callback`.
-  - Cross-session recall needs a stable user ID, as in `adk web`. Each new chat context in the custom A2A frontend has a different anonymous identity. Those contexts use conversation history and skip Memory Bank reads/writes, so unavailable cross-session memory cannot block a turn. Hero records still persist in Firestore.
-- **🛡️ Hero Party Management (Google Cloud Firestore)**:
-  - Real-time persistent state stored in a dedicated Firestore `heroes` collection.
-  - Tools: `list_heroes`, `get_hero`, `create_or_update_hero`, `update_hero_hp`, and `delete_hero`.
-- **🎲 Polyhedral Dice Engine**:
-  - Random dice rolls (`d4`, `d6`, `d8`, `d10`, `d12`, `d20`, `d100`) with modifiers for initiative, attack rolls, and healing (`roll_dice`). The frontend animates the actual roll result.
-- **🐉 5e SRD Monster Bestiary API**:
-  - Free public live API integration querying creature statistics, armor class, challenge ratings, traits, and actions (`lookup_monster`).
-- **🎨 Fantasy Character & Item Generation**:
-  - Generates character portraits and item illustrations using Gemini image models (`gemini-3.1-flash-lite-image`), saves them as local ADK artifacts, and uploads them to a public Cloud Storage bucket for direct inline rendering (`generate_item_image`).
-- **🎬 Cinematic Video Animations**:
-  - Generates short animation clips using Google Omni (`gemini-omni-flash-preview`), saves them as artifacts, and uploads them to Cloud Storage for persistent streaming (`generate_item_video`).
-- **💻 Vertex AI Sandboxed Code Execution**:
-  - Securely executes Python in an isolated `AgentEngineSandboxCodeExecutor` environment to compute complex damage distributions, win percentages, and turn-based battle simulations.
-- **🃏 A2UI Rich Card Display (v0.8)**:
-  - Emits schema-compliant A2UI data payloads rewrapped by `a2ui_callback` to render responsive visual cards, hero sheets, and combat summaries in the dev UI.
+[Desktop screenshot](docs/screenshots/after-1440.png) · [Mobile screenshot](docs/screenshots/after-375.png) · [Verification record](demo/QA.md) · [Independent review](demo/REVIEW.md)
 
----
+## What you can do
 
-## 📋 Roadmap & Backlog
+| Capability | Implementation |
+| --- | --- |
+| Manage a persistent party | Firestore `heroes` collection; `list_heroes`, `get_hero`, `create_or_update_hero`, `update_hero_hp`, and `delete_hero`. |
+| Roll dice | `roll_dice` supports polyhedral dice and modifiers; the UI animates the returned roll. |
+| Look up monsters | `lookup_monster` retrieves 5e SRD statistics, traits, and actions from the public bestiary API. |
+| Test encounters | Python runs in the Vertex AI Agent Engine sandbox and returns its actual output and stated assumptions. |
+| Forge images and video | `generate_item_image` uses `gemini-3.1-flash-lite-image`; `generate_item_video` uses `gemini-omni-flash-preview`. Media is uploaded to Cloud Storage and displayed inline. |
+| View rich responses | A2UI v0.8 cards, rows, columns, text, lists, dividers, images, and icons; the frontend also handles inline video. |
 
-The following features from the initial design brief are planned for future iterations:
+The root agent uses `gemini-3.8-flash`. The browser talks to a same-origin
+FastAPI proxy, which forwards A2A requests to the local or deployed agent.
+Cloud credentials stay on the server. Tool results pass through the proxy so
+dice and sandbox displays can use the actual result.
 
-- [ ] **Turn-by-Turn Combat Log Table**: Multi-round automated battle runner formatted into interactive A2UI tabular rows.
-- [ ] **Loot & Reward Generator**: Dynamic loot table drops based on defeated monster Challenge Rating (CR).
-- [ ] **Custom Audio Soundtrack**: Ambient battle themes and sound effects generated with Lyria.
+### Known limits
 
----
+- **Memory depends on identity.** Stable ADK playground user IDs can use Vertex
+  AI Memory Bank across sessions. A new chapter in the custom A2A frontend gets
+  a new anonymous identity and skips Memory Bank reads/writes. Conversation
+  history works within that chapter; hero records persist separately in Firestore.
+- **Cloud latency varies.** A verified party request took over four minutes.
+  The UI shows a still-working notice after 30 seconds and allows up to six
+  minutes for a reply.
+- **A successful simulation can have no model summary.** In that case the UI
+  shows a “Verified sandbox result” card with the verbatim output and explains
+  that no summary was returned. The demo's 1,000/1,000 wins apply only to its
+  printed simplified rules, not a general encounter prediction.
+- **Local verification does not deploy the agent.** No deployment was performed
+  for this update. Deployment requires explicit approval under [GEMINI.md](GEMINI.md).
 
-## 🚀 Local Setup & Development
+## Run locally
 
 ### Prerequisites
 
-- Python 3.11+
+- Python 3.11–3.13
 - [`uv`](https://docs.astral.sh/uv/) package manager
-- Google Cloud SDK (`gcloud`) with Application Default Credentials (ADC) configured:
-  ```bash
-  gcloud auth application-default login
-  ```
+- Google Cloud SDK (`gcloud`) and Application Default Credentials (ADC) with
+  access to the configured Firestore, Vertex AI models, Memory Bank, sandbox,
+  and asset bucket
+
+Use existing ADC or authenticate with the account that has project access:
+
+```bash
+gcloud auth application-default login
+```
+
+The repository currently references existing Google Cloud resources in
+[`app/agent.py`](app/agent.py), [`app/app_utils/services.py`](app/app_utils/services.py),
+and [`scripts/seed_firestore.py`](scripts/seed_firestore.py). Installing
+dependencies does not provision those resources. Node.js and FFmpeg are only
+needed to rebuild the [demo](demo/README.md).
 
 ### Installation
 
 ```bash
-# Clone repository
 git clone https://github.com/mugnimaestra/realmforge-party-builder.git
 cd realmforge-party-builder
-
-# Install dependencies
 uv sync
 ```
 
 ### Run the themed frontend locally
 
-Use ADC from an account that can access this project's Firestore, Vertex AI, Memory Bank, sandbox, and asset bucket. Do not put credentials in the browser or the repository.
-
-In the repository root, set the model backend and seed the example party:
+In the repository root, configure the Vertex AI backend:
 
 ```bash
 export GOOGLE_GENAI_USE_VERTEXAI=true
 export GOOGLE_CLOUD_PROJECT=qwiklabs-gcp-04-858b990e3059
 export GOOGLE_CLOUD_LOCATION=global
-uv run python scripts/seed_firestore.py
 ```
 
-The seeder replaces the four example hero records. Skip it if you want to keep changes to those heroes.
+Optionally seed the four example heroes. **This replaces those four records**;
+skip it to keep edits to the example party:
+
+```bash
+uv run python scripts/seed_firestore.py
+```
 
 Start the agent in that terminal:
 
@@ -92,7 +114,7 @@ Start the agent in that terminal:
 APP_URL=http://localhost:8000 uv run python -m app.fast_api_app
 ```
 
-In a second terminal, start the proxy from `frontend/`:
+From the repository root in a second terminal, start the proxy from `frontend/`:
 
 ```bash
 cd frontend
@@ -102,54 +124,77 @@ uv run python main.py
 
 Open [localhost:8080](http://localhost:8080). Without `AGENT_ENGINE_RESOURCE_NAME`, the proxy sends A2A requests to `http://localhost:8000/a2a/app` without authentication headers. The local agent uses server-side ADC for its cloud tools. To connect to a deployed agent, set `AGENT_ENGINE_RESOURCE_NAME` before starting the proxy; that mode uses ADC authentication.
 
-The Gemini model uses the global endpoint. Memory Bank and the sandbox stay in their configured region, `us-east1`. The model and project IDs remain unchanged.
+Gemini uses the global endpoint. Memory Bank and the sandbox use their configured
+region, `us-east1`; setting the model endpoint to `global` does not move them.
 
-### Running the Agent Playground Locally
+### Try the five core prompts
 
-Start the local ADK web interface:
+The welcome screen and sidebar provide these actions:
 
-```bash
-uv run python -m app.fast_api_app
-```
+1. “List my heroes in the party”
+2. “Roll 1d20+3 for initiative”
+3. “Look up a Goblin”
+4. “Simulate my party against an Owlbear using the Python sandbox. State your combat assumptions and report the win percentage.”
+5. “Forge a portrait of Valen Ironclad with his runic shield in a dark fantasy style”
 
-> **Tip:** In the web UI, create a **New Session** and turn **Token Streaming** **OFF** in settings ⚙️ to view the rendered A2UI cards.
+### ADK playground
 
-The server also provides the ADK playground at [localhost:8000](http://localhost:8000).
+The same agent server also provides the ADK playground at
+[localhost:8000](http://localhost:8000). Create a **New Session** and turn
+**Token Streaming off** in settings to view the rendered A2UI cards.
 
 ### Checks
 
 ```bash
 uv run pytest tests/unit
-# With the local frontend running; uses Chrome and does not capture test data:
+# Browser checks with the local frontend running (Chrome required):
 uv run --with patchright python scripts/check_frontend.py
-# Real cloud tools, with both local servers running:
+# Five real tool calls with both servers running; uses cloud quota:
 uv run --with patchright python scripts/check_live_agent.py
 ```
 
-### Demo source and license
+The live check stores raw responses in ignored `.local-demo/`. See the
+[verification record](demo/QA.md) for the recorded results and scope.
+
+## Demo source and license
 
 The editable [demo project](demo/README.md) uses Remotion, with video-shotcraft
 camera recipes and the hyperframes-motion-reel reference's beat grid and kinetic
 type. Remotion is free for individuals and companies with three or fewer
 employees; this is a personal hackathon project. See the [Remotion license](https://www.remotion.dev/license).
 The project includes an original 120 BPM score and attributed cinematic sound
-effects. Source and asset licenses are recorded in [demo/ATTRIBUTION.md](demo/ATTRIBUTION.md).
+effects. The SFX-only delivery shares the same picture track as the music
+version. Both MP4s are below 10 MB; the GIF is below 5 MB. Rebuild instructions
+are in [demo/README.md](demo/README.md), creative decisions in
+[demo/DESIGN.md](demo/DESIGN.md), and asset licenses in
+[demo/ATTRIBUTION.md](demo/ATTRIBUTION.md).
 
----
-
-## 📦 Project Structure
+## Project structure
 
 ```
 realmforge-party-builder/
 ├── app/
-│   ├── agent.py               # Root ADK agent, tools, schema, & sandbox configuration
-│   ├── a2ui_utils.py          # A2UI v0.8 response unwrapping callback
-│   ├── fast_api_app.py        # FastAPI server & A2A protocol router
-│   └── app_utils/             # Service registries, session, and artifact managers
-├── frontend/                  # Minimal FastAPI proxy and A2A chat web UI
+│   ├── agent.py               # Gemini agent, tools, A2UI instructions, sandbox
+│   ├── a2ui_utils.py          # A2UI response callback
+│   ├── fast_api_app.py        # ADK playground and local A2A server
+│   └── app_utils/             # Shared services and A2A routing
+├── frontend/
+│   ├── main.py                # Local/deployed A2A proxy
+│   └── static/index.html      # Tabletop chat UI; no build step
+├── demo/                      # Editable Remotion reel, assets, and QA records
+├── docs/                      # MP4s, preview GIF, and desktop/mobile screenshots
 ├── scripts/
-│   └── seed_firestore.py      # Firestore initial hero party seeder
-├── tests/                     # Unit and evaluation datasets
-├── pyproject.toml             # Dependencies & UV lock specifications
-└── README.md                  # Project documentation & backlog
+│   ├── seed_firestore.py      # Example party seeder
+│   ├── check_frontend.py      # Browser rendering/accessibility checks
+│   └── check_live_agent.py    # Real frontend-to-tool verification
+├── tests/                     # Unit tests and evaluation datasets
+├── pyproject.toml             # Python dependencies
+└── uv.lock                    # Locked Python environment
 ```
+
+## Backlog
+
+- [ ] Turn-by-turn combat log tables in A2UI.
+- [ ] Loot and reward generation based on monster challenge rating.
+- [ ] In-app ambient music and sound effects generated with Lyria. The demo's
+  existing score and SFX are part of the video project, not a runtime agent tool.
